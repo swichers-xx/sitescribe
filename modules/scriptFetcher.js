@@ -29,3 +29,12 @@ export async function fetchScriptContent(url) {
     return null;
   }
 }
+
+/**
+ * FOR TESTING PURPOSES ONLY.
+ * Clears the internal script cache.
+ * @private
+ */
+export function _resetCacheForTests() {
+  scriptCache.clear();
+}
