@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-env": "^7.26.9",
+    "babel-jest": "^29.7.0",
+    "jest": "^27.5.1",
+    "jest-chrome": "^0.8.0",
+    "whatwg-fetch": "^3.6.20"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}
