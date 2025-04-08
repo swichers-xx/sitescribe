@@ -45,35 +45,43 @@ async function patchedFetch(...args) {
  * @param {string} url - The request URL.
  */
 function patchedXHROpen(method, url) {
-  this._requestData = {
+  // Store initial data in a closure variable
+  const initialRequestData = {
     type: 'xhr',
     url,
     method,
     timestamp: new Date().toISOString()
   };
+  // 'this' refers to the XHR instance here
+  const xhrInstance = this; 
 
-  // Use arrow functions to maintain 'this' context if needed, or bind
   const handleLoad = () => {
-    this._requestData.status = this.status;
-    this._requestData.statusText = this.statusText;
-    networkRequests.push(this._requestData);
-    this.removeEventListener('load', handleLoad); // Clean up listener
-    this.removeEventListener('error', handleError); // Clean up listener
+    const finalRequestData = {
+        ...initialRequestData, // Use data from closure
+        status: xhrInstance.status, // Use xhrInstance
+        statusText: xhrInstance.statusText
+    };
+    networkRequests.push(finalRequestData);
+    xhrInstance.removeEventListener('load', handleLoad);
+    xhrInstance.removeEventListener('error', handleError);
   };
 
   const handleError = (event) => {
-    this._requestData.error = event.message || 'XHR Error';
-    networkRequests.push(this._requestData);
-    this.removeEventListener('load', handleLoad); // Clean up listener
-    this.removeEventListener('error', handleError); // Clean up listener
+    const finalRequestData = {
+        ...initialRequestData, // Use data from closure
+        error: event.message || 'XHR Error'
+    };
+    networkRequests.push(finalRequestData);
+    xhrInstance.removeEventListener('load', handleLoad);
+    xhrInstance.removeEventListener('error', handleError);
   };
 
-  this.addEventListener('load', handleLoad);
-  this.addEventListener('error', handleError);
+  xhrInstance.addEventListener('load', handleLoad);
+  xhrInstance.addEventListener('error', handleError);
 
-  // Ensure originalXHROpen is available before calling apply
   if (!originalXHROpen) throw new Error('Original XHR open not captured.');
-  return originalXHROpen.apply(this, arguments);
+  // Call the original XHR open method using apply on the xhrInstance
+  return originalXHROpen.apply(xhrInstance, arguments);
 }
 
 /**
