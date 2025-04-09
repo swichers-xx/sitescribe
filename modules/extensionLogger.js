@@ -108,4 +108,4 @@ class ExtensionLogger {
 // Create a global logger instance
 const logger = new ExtensionLogger();
 
-export { ExtensionLogger, logger };
+module.exports = { ExtensionLogger, logger };

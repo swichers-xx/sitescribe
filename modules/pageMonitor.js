@@ -1,12 +1,11 @@
 // Page Monitoring Module
-
-import { logger } from './extensionLogger.js';
+const logger = require('./extensionLogger.js').logger;
 
 /**
  * Manages the monitoring of web pages for changes and triggers captures.
  * Handles DOM mutations, scroll positions, and attempts to render full pages.
  */
-export const pageMonitor = {
+const pageMonitor = {
   /** @type {Map<number, {url: string, lastCapture: number, contentHash: string, isRendering: boolean, significantChanges: boolean}>} - Maps tabId to its monitoring state. */
   activePages: new Map(), // tabId -> monitoring state
   /** @type {Map<number, number>} - Maps tabId to its last known scroll position. */
@@ -119,6 +118,7 @@ export const pageMonitor = {
     let significantChangesDetected = false;
 
     try {
+      // Verify tab exists and is accessible
       const tab = await chrome.tabs.get(tabId);
       if (!tab || tab.status !== 'complete') {
         logger.warn(`Tab ${tabId} not ready for rendering`);
@@ -203,3 +203,5 @@ export const pageMonitor = {
     return significantChangesDetected;
   }
 };
+
+module.exports = pageMonitor;

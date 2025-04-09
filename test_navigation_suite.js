@@ -1,6 +1,6 @@
 // Comprehensive Navigation and Monitoring Test Suite
-import { pageMonitor } from './modules/pageMonitor.js';
-import { logger } from './modules/extensionLogger.js';
+const pageMonitor = require('./modules/pageMonitor.js');
+const logger = require('./modules/extensionLogger.js').logger;
 
 class NavigationTestSuite {
   constructor() {
