@@ -8,9 +8,35 @@ import { recentCaptures, MAX_RECENT_CAPTURES, CAPTURE_FORMATS, screenshotRateLim
 
 import { parseUrl, createFolderStructure, blobToDataUrl, ensureContentScript } from './modules/utils.js';
 
+// Enhanced Logging for Capture Process
+async function logCaptureDetails(captures) {
+  console.log('🔍 Capture Configuration:', {
+    totalCaptures: captures.length,
+    captureTypes: captures.map(c => c.type)
+  });
+
+  for (const capture of captures) {
+    try {
+      console.log(`📸 Preparing Capture: ${capture.type}`, {
+        filename: capture.filename,
+        hasCaptureMethod: !!capture.capture,
+        hasDirectData: !!capture.data
+      });
+    } catch (logError) {
+      console.error(`❌ Logging Error for ${capture.type}:`, logError);
+    }
+  }
+}
+
 // Main capture function
 async function captureWebsite(tabId, url) {
   try {
+    console.log(`🌐 Initiating Website Capture`, { 
+      tabId, 
+      url, 
+      timestamp: new Date().toISOString() 
+    });
+
     console.log(`🔍 Starting capture for tab ${tabId}, URL: ${url}`);
     
     // Get settings with enhanced logging
@@ -188,6 +214,9 @@ async function captureWebsite(tabId, url) {
       return settings.captureFormats[capture.type];
     });
 
+    // Add logging before processing captures
+    await logCaptureDetails(enabledCaptures);
+
     // Process captures with individual error handling
     for (const capture of enabledCaptures) {
       try {
@@ -221,11 +250,16 @@ async function captureWebsite(tabId, url) {
       await chrome.storage.local.set({ recentCaptures });
       chrome.runtime.sendMessage({ action: 'captureComplete', capture: captureRecord });
 
-      } catch (error) {
-    console.error('Capture error:', error);
+      } catch (globalCaptureError) {
+    console.error('🚨 Global Capture Error:', {
+      message: globalCaptureError.message,
+      stack: globalCaptureError.stack,
+      url,
+      tabId
+    });
+    // Consider adding more robust error handling or reporting mechanism
   }
 }
-
 
 // Debounced tab update handler
 let captureTimeouts = new Map();
@@ -275,8 +309,24 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-// Add message handlers for page monitoring and manual captures
+// Enhanced Connection Handling
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('🔍 Background Script Received Message:', {
+    action: request.action,
+    sender: sender.tab ? sender.tab.id : 'No Tab',
+    timestamp: new Date().toISOString()
+  });
+
+  if (request.action === 'connectionTest') {
+    console.log('✅ Connection Test Received from Content Script');
+    sendResponse({ 
+      status: 'connected', 
+      timestamp: Date.now(),
+      extensionVersion: chrome.runtime.getManifest().version
+    });
+    return true;
+  }
+
   if (!sender.tab) {
     if (request.action === 'captureNow') {
       captureWebsite(request.tabId, request.url);
@@ -322,3 +372,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 setInterval(() => {
   scriptCache.clear();
 }, 30 * 60 * 1000); // Clear every 30 minutes
+
+// Add global error handler for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🛑 Unhandled Rejection at:', promise, 'reason:', reason);
+});

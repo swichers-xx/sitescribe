@@ -283,84 +283,158 @@ function setupMutationObserver() {
   });
 }
 
-// Message handler with async support
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('📨 Received Message:', request);
+// Enhanced Connection Debugging
+function setupConnectionMonitoring() {
+  console.log('🔗 Setting up Connection Monitoring');
   
-  async function asyncHandler() {
+  // Periodic connection test
+  const connectionTestInterval = setInterval(() => {
     try {
-      console.log('🔬 Processing request:', request.action);
-      
-      switch(request.action) {
-        case 'scrollTo':
-          await scrollTo(request.position);
-          return { success: true };
-        case 'getContent':
-          console.log('📋 Capture Settings:', {
-            captureScripts: request.captureScripts,
-            captureNetworkRequests: request.captureNetworkRequests
-          });
-          
-          const pageContent = await getPageContent();
-          console.log('📦 Page Content Captured:', {
-            textLength: pageContent.content ? pageContent.content.length : 'No text',
-            metadataKeys: pageContent.metadata ? Object.keys(pageContent.metadata) : 'No metadata'
-          });
-          
-          return pageContent;
-        case 'getPageDimensions':
-          return {
-            width: Math.max(
-              document.documentElement.scrollWidth,
-              document.documentElement.offsetWidth,
-              document.documentElement.clientWidth
-            ),
-            height: Math.max(
-              document.documentElement.scrollHeight,
-              document.documentElement.offsetHeight,
-              document.documentElement.clientHeight
-            ),
-            viewportHeight: window.innerHeight,
-            scrollY: window.scrollY
-          };
-        case 'getHTML':
-          return getHTML();
-        case 'getText':
-          return getText();
-        case 'getReadableContent':
-          // Ensure Readability is loaded before trying to use it
-          await initReadability(); 
-          return getReadableContent();
-        case 'getCodeSnippets':
-          return getCodeSnippets();
-        default:
-          console.warn('❓ Unknown message action:', request.action);
-          return { error: 'Unknown action' };
-      }
-    } catch (error) {
-      console.error('❌ Content Script Error:', error);
-      return { 
-        error: error.message, 
-        stack: error.stack 
-      };
-    }
-  }
-
-  // Use sendResponse with async support
-  asyncHandler()
-    .then(result => sendResponse(result))
-    .catch(error => {
-      console.error('🚨 Unhandled Async Error:', error);
-      sendResponse({ 
-        error: 'Unhandled async error', 
-        details: error.message 
+      chrome.runtime.sendMessage({ action: 'connectionTest' }, response => {
+        if (chrome.runtime.lastError) {
+          console.error('❌ Connection Test Failed:', chrome.runtime.lastError);
+        } else {
+          console.log('✅ Connection Test Successful');
+        }
       });
-    });
+    } catch (error) {
+      console.error('🚨 Connection Monitoring Error:', error);
+      clearInterval(connectionTestInterval);
+    }
+  }, 5000); // Test every 5 seconds
 
-  // Required for async sendResponse
-  return true;
+  // Detect when runtime becomes available
+  chrome.runtime.onInstalled.addListener(() => {
+    console.log('🔌 Extension Installed/Updated');
+  });
+}
+
+// Comprehensive Error Tracking
+window.addEventListener('error', (event) => {
+  console.error('🚨 Unhandled Error:', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error
+  });
 });
+
+// Wrap message handling with comprehensive error tracking
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('📨 Content Script Received Message:', request);
+  
+  try {
+    switch(request.action) {
+      case 'connectionTest':
+        sendResponse({ status: 'connected', timestamp: Date.now() });
+        break;
+      
+      case 'scrollTo':
+        try {
+          scrollTo(request.position);
+          sendResponse({ success: true });
+        } catch (scrollError) {
+          console.error('🛑 Scroll Error:', scrollError);
+          sendResponse({ error: scrollError.message });
+        }
+        break;
+      
+      case 'getContent':
+        try {
+          const result = getPageContent();
+          sendResponse(result);
+        } catch (contentError) {
+          console.error('🚫 Content Collection Error:', contentError);
+          sendResponse({ error: contentError.message });
+        }
+        break;
+      
+      case 'getHTML':
+        try {
+          const html = getHTML();
+          sendResponse(html);
+        } catch (htmlError) {
+          console.error('HTML Capture Error:', htmlError);
+          sendResponse('Error capturing HTML');
+        }
+        break;
+      
+      case 'getPageDimensions':
+        try {
+          const { width, height } = getPageDimensions();
+          sendResponse({ width, height });
+        } catch (dimensionError) {
+          console.error('Page Dimension Error:', dimensionError);
+          sendResponse({ width: 0, height: 0 });
+        }
+        break;
+      
+      case 'getText':
+        try {
+          const text = getText();
+          sendResponse(text);
+        } catch (textError) {
+          console.error('Text Capture Error:', textError);
+          sendResponse('Error capturing text');
+        }
+        break;
+      
+      case 'getReadableContent':
+        try {
+          const readableContent = getReadableContent();
+          sendResponse(readableContent);
+        } catch (readableContentError) {
+          console.error('Readable Content Capture Error:', readableContentError);
+          sendResponse('Error capturing readable content');
+        }
+        break;
+      
+      case 'getCodeSnippets':
+        try {
+          const codeSnippets = getCodeSnippets();
+          sendResponse(codeSnippets);
+        } catch (codeSnippetsError) {
+          console.error('Code Snippets Capture Error:', codeSnippetsError);
+          sendResponse('Error capturing code snippets');
+        }
+        break;
+      
+      default:
+        console.warn('❓ Unhandled message action:', request.action);
+        sendResponse({ error: 'Unhandled action' });
+    }
+  } catch (globalError) {
+    console.error('🌍 Global Message Handling Error:', globalError);
+    sendResponse({ error: 'Unexpected error in message handling' });
+  }
+  
+  return true; // Enable async response
+});
+
+// Utility function for page dimensions
+function getPageDimensions() {
+  return {
+    width: Math.max(
+      document.body.scrollWidth, 
+      document.documentElement.scrollWidth,
+      document.body.offsetWidth, 
+      document.documentElement.offsetWidth,
+      document.body.clientWidth, 
+      document.documentElement.clientWidth
+    ),
+    height: Math.max(
+      document.body.scrollHeight, 
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight, 
+      document.documentElement.offsetHeight,
+      document.body.clientHeight, 
+      document.documentElement.clientHeight
+    )
+  };
+}
 
 // Initialize observers
 setupMutationObserver();
+setupConnectionMonitoring();
 console.log('Enhanced content script initialized with page monitoring');
