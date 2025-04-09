@@ -1,11 +1,11 @@
 // Page Monitoring Module
-const logger = require('./extensionLogger.js').logger;
+import { logger } from './extensionLogger.js';
 
 /**
  * Manages the monitoring of web pages for changes and triggers captures.
  * Handles DOM mutations, scroll positions, and attempts to render full pages.
  */
-const pageMonitor = {
+export const pageMonitor = {
   /** @type {Map<number, {url: string, lastCapture: number, contentHash: string, isRendering: boolean, significantChanges: boolean}>} - Maps tabId to its monitoring state. */
   activePages: new Map(), // tabId -> monitoring state
   /** @type {Map<number, number>} - Maps tabId to its last known scroll position. */
@@ -204,4 +204,4 @@ const pageMonitor = {
   }
 };
 
-module.exports = pageMonitor;
+export default pageMonitor;

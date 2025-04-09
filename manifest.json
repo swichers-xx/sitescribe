@@ -1,22 +1,18 @@
 {
   "manifest_version": 3,
   "name": "SiteScribe",
-  "description": "Extension Overview: \"SiteScribe\"\nPurpose:\nSiteScribe is a lightweight browser extension that runs seamlessly in the background, capturing snapshots of every site visited in multiple formats. With robust customization options and theming, it adapts to the needs of any user, offering a unified way to archive, revisit, and interact with web content.",
-  "version": "1.0.0",
+  "version": "1.0.2",
+  "description": "Capture and archive web content seamlessly with full-page screenshots, PDFs, and more.",
   "permissions": [
-    "storage",
-    "tabs", 
     "activeTab",
+    "tabs",
+    "storage",
+    "downloads",
+    "scripting",
     "notifications",
     "webRequest",
-    "cookies",
-    "downloads",
-    "history",
-    "bookmarks",
-    "proxy",
-    "scripting",
-    "pageCapture",
-    "downloads.shelf"
+    "webNavigation",
+    "pageCapture"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -25,37 +21,50 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "run_at": "document_idle",
-      "all_frames": false
+      "run_at": "document_end",
+      "all_frames": false,
+      "world": "MAIN"
     }
   ],
-  "web_accessible_resources": [{
-    "resources": [
-      "webData/*",
-      "lib/Readability.js"
-    ],
-    "matches": ["<all_urls>"]
-  }],
-  "author": "Sean Wichers",
-  "homepage_url": "https://www.luceresearch.com",
-  "action": {
-    "default_popup": "popup.html"
-  },
-  "options_ui": {
-    "page": "options.html",
-    "open_in_tab": true
-  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "modules/*.js",
+        "lib/*.js",
+        "webData/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
-  "devtools_page": "devtools.html",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "commands": {
-    "_execute_action": {
+    "capture_page": {
       "suggested_key": {
         "default": "Ctrl+Shift+Y"
       },
-      "description": "Opens the extension popup"
+      "description": "Capture current page"
+    },
+    "run_diagnostics": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+D"
+      },
+      "description": "Run extension diagnostics"
     }
   }
 }
