@@ -18,8 +18,14 @@ export function calculateReadingTime() {
  * @returns {number} The total word count.
  */
 export function countWords() {
-  const text = document.body.innerText;
-  return text.trim().split(/\s+/).length;
+  const text = document.body.innerText || ''; // Ensure text is not null/undefined
+  const trimmedText = text.trim();
+  // If the trimmed text is empty, return 0 words
+  if (!trimmedText) {
+    return 0;
+  }
+  // Otherwise, split by whitespace and return the length
+  return trimmedText.split(/\s+/).length;
 }
 
 /**

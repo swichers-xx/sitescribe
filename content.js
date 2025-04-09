@@ -285,18 +285,29 @@ function setupMutationObserver() {
 
 // Message handler with async support
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const asyncHandler = async () => {
-    console.log('Message received in content script:', request);
+  console.log('📨 Received Message:', request);
+  
+  async function asyncHandler() {
     try {
-      switch (request.action) {
+      console.log('🔬 Processing request:', request.action);
+      
+      switch(request.action) {
         case 'scrollTo':
           await scrollTo(request.position);
           return { success: true };
         case 'getContent':
-          return {
-            content: await getPageContent(),
-            metadata: await getPageMetadata()
-          };
+          console.log('📋 Capture Settings:', {
+            captureScripts: request.captureScripts,
+            captureNetworkRequests: request.captureNetworkRequests
+          });
+          
+          const pageContent = await getPageContent();
+          console.log('📦 Page Content Captured:', {
+            textLength: pageContent.content ? pageContent.content.length : 'No text',
+            metadataKeys: pageContent.metadata ? Object.keys(pageContent.metadata) : 'No metadata'
+          });
+          
+          return pageContent;
         case 'getPageDimensions':
           return {
             width: Math.max(
@@ -323,27 +334,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'getCodeSnippets':
           return getCodeSnippets();
         default:
-          throw new Error('Unknown action');
+          console.warn('❓ Unknown message action:', request.action);
+          return { error: 'Unknown action' };
       }
     } catch (error) {
-      console.error(`Error handling ${request.action}:`, error);
-      throw error;
+      console.error('❌ Content Script Error:', error);
+      return { 
+        error: error.message, 
+        stack: error.stack 
+      };
     }
-  };
+  }
 
+  // Use sendResponse with async support
   asyncHandler()
     .then(result => sendResponse(result))
     .catch(error => {
-      // Ensure a serializable error object is sent back
+      console.error('🚨 Unhandled Async Error:', error);
       sendResponse({ 
-        error: { 
-          message: error.message, 
-          name: error.name, 
-          stack: error.stack 
-        } 
+        error: 'Unhandled async error', 
+        details: error.message 
       });
     });
 
+  // Required for async sendResponse
   return true;
 });
 

@@ -11,9 +11,9 @@ import { parseUrl, createFolderStructure, blobToDataUrl, ensureContentScript } f
 // Main capture function
 async function captureWebsite(tabId, url) {
   try {
-    console.log(`Starting capture for tab ${tabId}, URL: ${url}`);
+    console.log(`🔍 Starting capture for tab ${tabId}, URL: ${url}`);
     
-    // Get settings
+    // Get settings with enhanced logging
     const settings = await chrome.storage.sync.get({
       captureFormats: {
       pdf: true,
@@ -25,6 +25,7 @@ async function captureWebsite(tabId, url) {
       captureNetworkRequests: true,
       maxNetworkRequests: 100
     });
+    console.log('📋 Capture Settings:', JSON.stringify(settings, null, 2));
 
     // Check if tab is accessible
     try {
@@ -51,8 +52,10 @@ async function captureWebsite(tabId, url) {
       }
     }
 
+    // Add more detailed logging for content script injection
     if (!contentScriptLoaded) {
-      throw new Error('Failed to inject content script after multiple attempts');
+      console.error('❌ CRITICAL: Failed to inject content script after multiple attempts');
+      console.error(`Details: tabId=${tabId}, url=${url}`);
     }
 
     // Get content and metadata with retry
@@ -82,6 +85,12 @@ async function captureWebsite(tabId, url) {
         resolve(response || { content: 'No content available', metadata: {} });
       }
       });
+    });
+
+    // Enhanced logging for page data
+    console.log('📦 Page Data Received:', {
+      contentLength: pageData.content ? pageData.content.length : 'No content',
+      metadataKeys: pageData.metadata ? Object.keys(pageData.metadata) : 'No metadata'
     });
 
     // Create folder structure

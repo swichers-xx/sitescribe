@@ -1,5 +1,7 @@
 // Page Monitoring Module
 
+import { logger } from './extensionLogger.js';
+
 /**
  * Manages the monitoring of web pages for changes and triggers captures.
  * Handles DOM mutations, scroll positions, and attempts to render full pages.
@@ -26,8 +28,11 @@ export const pageMonitor = {
    */
   async startMonitoring(tabId, url) {
     if (this.activePages.has(tabId)) {
-      return; // Already monitoring
+      logger.info(`Already monitoring tab ${tabId}`);
+      return;
     }
+    
+    logger.debug(`Starting monitoring for tab ${tabId}, URL: ${url}`, { tabId, url });
     
     this.activePages.set(tabId, {
       url,
@@ -37,14 +42,14 @@ export const pageMonitor = {
       significantChanges: false
     });
 
-    // Inject monitoring script
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
         function: this.setupPageMonitoring,
       });
+      logger.info(`Monitoring script injected successfully for tab ${tabId}`);
     } catch (error) {
-      console.error('Failed to inject monitoring script:', error);
+      logger.error(`Failed to inject monitoring script for tab ${tabId}`, error);
     }
   },
 
@@ -104,44 +109,97 @@ export const pageMonitor = {
    */
   async renderPage(tabId) {
     const page = this.activePages.get(tabId);
-    if (!page || page.isRendering) return false; // Return false if not monitoring or already rendering
+    if (!page || page.isRendering) {
+      logger.debug(`Tab ${tabId} already rendering or not monitored`);
+      return false;
+    }
 
     page.isRendering = true;
     let lastScrollPosition = 0;
-    let significantChangesDetected = false; // Track changes during rendering
+    let significantChangesDetected = false;
 
     try {
-      // Get page dimensions
-      const { height } = await chrome.tabs.sendMessage(tabId, { 
-        action: 'getPageDimensions' 
-      });
+      const tab = await chrome.tabs.get(tabId);
+      if (!tab || tab.status !== 'complete') {
+        logger.warn(`Tab ${tabId} not ready for rendering`);
+        return false;
+      }
 
-      // Scroll through the page
-      while (lastScrollPosition < height) {
-        await chrome.tabs.sendMessage(tabId, {
-          action: 'scrollTo',
-          position: lastScrollPosition
-        });
+      logger.info(`Starting page render for tab ${tabId}`, { url: tab.url });
 
-        // Wait for content to load
+      // Verify content script is injected
+      try {
+        await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+      } catch (injectionError) {
+        logger.error(`Content script injection failed for tab ${tabId}:`, injectionError);
+        
+        // Attempt to re-inject content script
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId },
+            files: ['content.js']
+          });
+        } catch (reinjectError) {
+          logger.error(`Failed to re-inject content script:`, reinjectError);
+          return false;
+        }
+      }
+
+      // Get page dimensions with timeout and error handling
+      let pageHeight;
+      try {
+        const dimensionsResponse = await Promise.race([
+          chrome.tabs.sendMessage(tabId, { action: 'getPageDimensions' }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Dimensions request timed out')), 5000))
+        ]);
+        pageHeight = dimensionsResponse.height;
+      } catch (dimensionsError) {
+        logger.error(`Failed to get page dimensions for tab ${tabId}:`, dimensionsError);
+        pageHeight = 5000; // Fallback to a default scroll height
+      }
+
+      logger.info(`Page height for tab ${tabId}: ${pageHeight}`);
+
+      // Scroll through the page with enhanced error handling
+      while (lastScrollPosition < pageHeight) {
+        try {
+          await chrome.tabs.sendMessage(tabId, {
+            action: 'scrollTo',
+            position: lastScrollPosition
+          });
+        } catch (scrollError) {
+          logger.warn(`Scroll failed at position ${lastScrollPosition}:`, scrollError);
+          // Continue scrolling even if one scroll fails
+        }
+
         await new Promise(resolve => setTimeout(resolve, this.scrollInterval));
         lastScrollPosition += this.minScrollStep;
       }
 
-      // Wait for final renders
+      // Wait for final renders with logging
+      logger.info(`Waiting for final renders on tab ${tabId}`);
       await new Promise(resolve => setTimeout(resolve, this.renderTimeout));
 
-      // Check if significant changes were detected during this render process
+      // Check if significant changes were detected
       if (page.significantChanges) {
         significantChangesDetected = true;
-        page.significantChanges = false; // Reset flag for next time
-        page.lastCapture = Date.now(); // Update last capture time conceptually
+        page.significantChanges = false;
+        page.lastCapture = Date.now();
+        logger.info(`Significant changes detected for tab ${tabId}`);
+      } else {
+        logger.info(`No significant changes detected for tab ${tabId}`);
       }
+
     } catch (error) {
-      console.error('Page rendering failed:', error);
+      logger.error(`Comprehensive render error for tab ${tabId}`, {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
     } finally {
       page.isRendering = false;
     }
-    return significantChangesDetected; // Return the result
+
+    return significantChangesDetected;
   }
 };

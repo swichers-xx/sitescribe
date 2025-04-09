@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SiteScribe Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <header>
+      <h1>SiteScribe Settings</h1>
+      <p class="version">Version 1.0.0</p>
+    </header>
+
+    <main>
+      <div class="settings-grid">
+        
+
+        
+        <div class="settings-card">
+          <h2>Notifications</h2>
+          <div class="settings-content">
+            <div class="setting-item">
+              <label>
+                Enable Notifications
+                <input type="checkbox" id="notificationsEnabled" checked>
+              </label>
+              <p class="setting-description">Show desktop notifications</p>
+            </div>
+            <div class="setting-item">
+              <label>Notification Duration (seconds)</label>
+              <input type="number" id="notificationDuration" min="1" max="60" value="5">
+            </div>
+          </div>
+        </div>
+        
+
+        
+        <div class="settings-card">
+          <h2>Keyboard Shortcuts</h2>
+          <div class="settings-content">
+            <div class="setting-item">
+              <button id="configureShortcuts" class="primary-btn">Configure Shortcuts</button>
+              <p class="setting-description">Set up custom keyboard shortcuts</p>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        <div class="settings-card">
+          <h2>File Organization</h2>
+          <div class="settings-content">
+          <div class="setting-item">
+            <label>Base Directory Name</label>
+            <input type="text" id="baseDir" value="webData">
+            <p class="setting-description">Root folder for all captures</p>
+          </div>
+          
+          <div class="setting-item">
+            <label>Folder Structure Template</label>
+            <select id="folderTemplate">
+            <option value="domain">domain/date</option>
+            <option value="date">date/domain</option>
+            <option value="custom">Custom</option>
+            </select>
+            <input type="text" id="customFolderTemplate" placeholder="{domain}/{yyyy}/{MM}/{dd}" 
+               style="display: none;">
+            <p class="setting-description">Available variables: {domain}, {yyyy}, {MM}, {dd}, {title}</p>
+          </div>
+
+          <div class="setting-item">
+            <label>File Naming Template</label>
+            <select id="fileTemplate">
+            <option value="timestamp">timestamp_type</option>
+            <option value="type">type_timestamp</option>
+            <option value="custom">Custom</option>
+            </select>
+            <input type="text" id="customFileTemplate" placeholder="{type}_{timestamp}" 
+               style="display: none;">
+            <p class="setting-description">Available variables: {type}, {timestamp}, {title}</p>
+          </div>
+
+          <div class="setting-item">
+            <label>Date Format</label>
+            <select id="dateFormat">
+            <option value="iso">ISO (2023-12-31)</option>
+            <option value="us">US (12/31/2023)</option>
+            <option value="eu">EU (31/12/2023)</option>
+            <option value="custom">Custom</option>
+            </select>
+            <input type="text" id="customDateFormat" placeholder="YYYY-MM-DD" 
+               style="display: none;">
+          </div>
+
+          <div class="setting-item">
+            <label>
+            <input type="checkbox" id="createIndexFile">
+            Create index.json in each folder
+            </label>
+            <p class="setting-description">Maintains a catalog of captures in each directory</p>
+          </div>
+
+          <div class="setting-item">
+            <label>
+            <input type="checkbox" id="useSubdomains">
+            Include subdomains in path
+            </label>
+            <p class="setting-description">Creates separate folders for subdomains</p>
+          </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h2>Language Detection</h2>
+          <div class="settings-content">
+          <div class="setting-item">
+          <label>
+          <input type="checkbox" id="enableLanguageDetection" checked>
+          Enable automatic language detection
+          </label>
+          <p class="setting-description">Automatically detect programming languages in code blocks</p>
+          </div>
+
+          <div class="setting-item">
+          <label>Minimum Code Length</label>
+          <input type="number" id="minCodeLength" value="10" min="1" max="1000">
+          <p class="setting-description">Minimum characters required for language detection</p>
+          </div>
+
+          <div class="setting-item">
+          <label>Detection Confidence</label>
+          <select id="detectionConfidence">
+          <option value="high">High (Strict matching)</option>
+          <option value="medium" selected>Medium (Default)</option>
+          <option value="low">Low (More permissive)</option>
+          </select>
+          <p class="setting-description">How strict the language detection should be</p>
+          </div>
+
+          <div class="setting-item">
+          <label>
+          <input type="checkbox" id="preferExplicitLanguage" checked>
+          Prefer explicit language tags
+          </label>
+          <p class="setting-description">Use language tags from code blocks when available</p>
+          </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h2>Script & Network Capture</h2>
+          <div class="settings-content">
+          <div class="setting-item">
+            <label>
+            <input type="checkbox" id="captureScripts" checked>
+            Capture Script Contents
+            </label>
+            <p class="setting-description">Save the content of inline scripts and references to external scripts</p>
+          </div>
+
+          <div class="setting-item">
+            <label>
+            <input type="checkbox" id="captureNetworkRequests" checked>
+            Monitor Network Requests
+            </label>
+            <p class="setting-description">Track API calls and network requests made by the page</p>
+          </div>
+
+          <div class="setting-item">
+            <label>Maximum Network Requests</label>
+            <input type="number" id="maxNetworkRequests" value="100" min="10" max="1000">
+            <p class="setting-description">Maximum number of network requests to store per page</p>
+          </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h2>LLM Integration</h2>
+          <div class="settings-content">
+          <div class="setting-item">
+            <label>
+            <input type="checkbox" id="llmEnabled">
+            Enable LLM Processing
+            </label>
+            <p class="setting-description">Process captured content with AI for summaries and insights</p>
+          </div>
+
+          <div class="setting-item">
+            <label>LLM Endpoint</label>
+            <input type="url" id="llmEndpoint" placeholder="https://api.openai.com/v1/chat/completions">
+            <p class="setting-description">API endpoint for the LLM service</p>
+          </div>
+
+          <div class="setting-item">
+            <label>API Key</label>
+            <input type="password" id="llmApiKey" placeholder="sk-...">
+            <p class="setting-description">Your API key for the LLM service</p>
+          </div>
+
+          <div class="setting-item">
+            <label>Model</label>
+            <select id="llmModel">
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="custom">Custom Model</option>
+            </select>
+            <input type="text" id="customModel" placeholder="Custom model name" style="display: none;">
+          </div>
+
+          <div class="setting-item">
+            <label>System Prompt</label>
+            <textarea id="llmPrompt" rows="3" placeholder="Summarize the main points of this content:"></textarea>
+            <p class="setting-description">Default instruction for content processing</p>
+          </div>
+
+          <div class="setting-item">
+            <label>Max Tokens</label>
+            <input type="number" id="llmMaxTokens" value="500" min="100" max="4000">
+            <p class="setting-description">Maximum length of LLM response</p>
+          </div>
+
+          <div class="setting-item">
+            <label>Temperature</label>
+            <input type="range" id="llmTemperature" min="0" max="100" value="70">
+            <span id="temperatureValue">0.7</span>
+            <p class="setting-description">Controls randomness of the output (0 = focused, 1 = creative)</p>
+          </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h2>Data Management</h2>
+          <div class="settings-content">
+            <div class="setting-item">
+              <button id="exportData" class="secondary-btn">Export Data</button>
+              <button id="importData" class="secondary-btn">Import Data</button>
+              <input type="file" id="importFile" accept="application/json" style="display: none;">
+            </div>
+            <div class="setting-item">
+              <button id="clearData" class="danger-btn">Clear All Data</button>
+              <p class="setting-description">Warning: This will reset all settings</p>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        <div class="settings-card">
+          <h2>Proxy Settings</h2>
+          <div class="settings-content">
+            <div class="setting-item">
+              <label>Proxy Server</label>
+              <input type="text" id="proxyServer" placeholder="proxy.example.com">
+            </div>
+            <div class="setting-item">
+              <label>Port</label>
+              <input type="number" id="proxyPort" placeholder="8080">
+            </div>
+          </div>
+        </div>
+        
+      </div>
+
+      <div class="about-section">
+        <h2>About</h2>
+        <p>Extension Overview: "SiteScribe"
+Purpose:
+SiteScribe is a lightweight browser extension that runs seamlessly in the background, capturing snapshots of every site visited in multiple formats. With robust customization options and theming, it adapts to the needs of any user, offering a unified way to archive, revisit, and interact with web content.</p>
+        <p><a href="https://www.luceresearch.com" target="_blank">Visit Website</a></p>
+        <p>Created by Sean Wichers</p>
+      </div>
+    </main>
+
+    <footer>
+      <button id="saveSettings" class="primary-btn">Save Changes</button>
+      <button id="resetSettings" class="secondary-btn">Reset to Defaults</button>
+    </footer>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
