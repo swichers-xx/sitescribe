@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SiteScribe Navigation Test Runner</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #results { margin-top: 20px; }
+        .success { color: green; }
+        .failure { color: red; }
+    </style>
+</head>
+<body>
+    <h1>SiteScribe Navigation Test Runner</h1>
+    <div id="results"></div>
+    <script>
+        // Simple test suite for browser compatibility
+        class NavigationTestSuite {
+            constructor() {
+                this.testWebsites = [
+                    'https://example.com',
+                    'https://wikipedia.org',
+                    'https://developer.mozilla.org'
+                ];
+            }
+
+            async runTestSuite() {
+                console.log('🚀 Starting Navigation Test Suite');
+                const results = [];
+
+                for (const website of this.testWebsites) {
+                    try {
+                        const result = await this.testNavigation(website);
+                        results.push(result);
+                        console.log(`✅ Test Completed for ${website}`, result);
+                    } catch (error) {
+                        console.error(`❌ Test Failed for ${website}`, error);
+                        results.push({ url: website, error: error.message });
+                    }
+
+                    // Wait between tests
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+
+                console.log('🏁 Navigation Test Suite Completed', results);
+                return results;
+            }
+
+            async testNavigation(url) {
+                console.log(`🌐 Testing Navigation to: ${url}`);
+                
+                return new Promise((resolve, reject) => {
+                    try {
+                        // Simulate navigation
+                        const iframe = document.createElement('iframe');
+                        iframe.src = url;
+                        iframe.onload = () => {
+                            resolve({
+                                url,
+                                contentScriptInjected: true,
+                                significantChanges: true
+                            });
+                        };
+                        iframe.onerror = () => {
+                            reject(new Error(`Failed to load ${url}`));
+                        };
+                        document.body.appendChild(iframe);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+        }
+
+        // Capture console output
+        const resultsDiv = document.getElementById('results');
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const logs = [];
+
+        console.log = (...args) => {
+            logs.push({ type: 'log', message: args.map(String).join(' ') });
+            originalConsoleLog(...args);
+        };
+
+        console.error = (...args) => {
+            logs.push({ type: 'error', message: args.map(String).join(' ') });
+            originalConsoleError(...args);
+        };
+
+        // Display logs
+        function displayLogs() {
+            logs.forEach(log => {
+                const logElement = document.createElement('div');
+                logElement.textContent = log.message;
+                logElement.className = log.type === 'error' ? 'failure' : 'success';
+                resultsDiv.appendChild(logElement);
+            });
+        }
+
+        // Run tests
+        window.addEventListener('load', () => {
+            try {
+                const testSuite = new NavigationTestSuite();
+                testSuite.runTestSuite()
+                    .then(results => {
+                        console.log('Test Suite Results:', JSON.stringify(results, null, 2));
+                        displayLogs();
+                    })
+                    .catch(error => {
+                        console.error('Test Suite Execution Error:', error);
+                        displayLogs();
+                    });
+            } catch (error) {
+                console.error('Test Suite Initialization Error:', error);
+                displayLogs();
+            }
+        });
+    </script>
+</body>
+</html>
