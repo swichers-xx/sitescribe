@@ -1,46 +1,80 @@
 (function() {
+  // Defensive wrapper to ensure chrome.runtime exists
+  if (typeof chrome === 'undefined' || !chrome.runtime) {
+    console.error('Chrome runtime not available');
+    return;
+  }
+
   // Robust Content Script Communication Module
   const ContentScriptCommunication = {
-    // Ping handler to verify script is loaded
+    // Safe message listener setup
     setupPingHandler() {
-      chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        console.log('📨 Content Script Received Message:', request);
-        
-        switch(request.action) {
-          case 'ping':
-            console.log('🏓 Ping received, responding with pong');
-            sendResponse('pong');
-            return true;
-          
-          case 'getPageDimensions':
-            try {
-              const dimensions = this.getPageDimensions();
-              sendResponse(dimensions);
-            } catch (error) {
-              console.error('❌ Page Dimensions Error:', error);
-              sendResponse({ error: error.message });
-            }
-            return true;
-          
-          case 'getHTML':
-            try {
-              const html = this.getCleanHTML();
-              sendResponse(html);
-            } catch (error) {
-              console.error('❌ HTML Capture Error:', error);
-              sendResponse({ error: error.message });
-            }
-            return true;
+      try {
+        // Defensive check for onMessage
+        if (!chrome.runtime || !chrome.runtime.onMessage) {
+          console.error('chrome.runtime.onMessage is undefined');
+          return;
         }
-        
-        return false;
-      });
+
+        // Wrap message listener with error handling
+        const messageHandler = (request, sender, sendResponse) => {
+          try {
+            console.log('📨 Content Script Received Message:', request);
+            
+            switch(request.action) {
+              case 'ping':
+                console.log('🏓 Ping received, responding with pong');
+                sendResponse('pong');
+                return true;
+              
+              case 'getPageDimensions':
+                try {
+                  const dimensions = this.getPageDimensions();
+                  sendResponse(dimensions);
+                } catch (error) {
+                  console.error('❌ Page Dimensions Error:', error);
+                  sendResponse({ error: error.message });
+                }
+                return true;
+              
+              case 'getHTML':
+                try {
+                  const html = this.getCleanHTML();
+                  sendResponse(html);
+                } catch (error) {
+                  console.error('❌ HTML Capture Error:', error);
+                  sendResponse({ error: error.message });
+                }
+                return true;
+              
+              default:
+                console.warn('❓ Unhandled message action:', request.action);
+                sendResponse({ error: 'Unhandled action' });
+                return false;
+            }
+          } catch (handlerError) {
+            console.error('🌍 Message Handler Global Error:', handlerError);
+            sendResponse({ error: 'Unexpected error in message handling' });
+            return false;
+          }
+        };
+
+        // Add message listener with fallback
+        chrome.runtime.onMessage.addListener(messageHandler);
+      } catch (setupError) {
+        console.error('🚨 Message Listener Setup Error:', setupError);
+      }
     },
 
     // Periodic status reporting
     setupStatusReporting() {
       function reportStatus() {
         try {
+          if (!chrome.runtime || !chrome.runtime.sendMessage) {
+            console.error('Cannot send status message');
+            return;
+          }
+
           chrome.runtime.sendMessage({
             action: 'logContentScriptStatus',
             status: 'active',
@@ -98,29 +132,18 @@
       return clone.outerHTML;
     },
 
-    // Scroll Handling
-    scrollTo(position) {
-      return new Promise((resolve, reject) => {
-        try {
-          window.scrollTo({
-            top: position,
-            behavior: 'smooth'
-          });
-          setTimeout(resolve, 200); // Allow time for scroll animation
-        } catch (error) {
-          reject(error);
-        }
-      });
-    },
-
     // Initialize Communication
     init() {
       // Global flag to indicate content script is loaded
       window.contentScriptInjected = true;
       
-      // Set up communication handlers
-      this.setupPingHandler();
-      this.setupStatusReporting();
+      // Set up communication handlers with error handling
+      try {
+        this.setupPingHandler();
+        this.setupStatusReporting();
+      } catch (initError) {
+        console.error('🚨 Content Script Initialization Error:', initError);
+      }
       
       console.log('✨ Content Script Initialized and Ready');
     }
@@ -137,7 +160,7 @@
     });
   });
 
-  // Initialize when DOM is fully loaded
+  // Initialize when DOM is fully loaded or immediately if already loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => ContentScriptCommunication.init());
   } else {
